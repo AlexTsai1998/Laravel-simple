@@ -1,0 +1,84 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel_app
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html:cached
+    environment:
+      - APP_NAME=Laravel
+      - APP_ENV=local
+      - APP_KEY=base64:your_app_key_here
+      - APP_DEBUG=true
+      - APP_URL=http://localhost
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=laravel
+      - DB_USERNAME=root
+      - DB_PASSWORD=your_mysql_password_here
+    depends_on:
+      - db
+      - redis
+    ports:
+      - 8000:8000
+    networks:
+      - laravel
+
+  db:
+    image: mysql:8
+    container_name: laravel_db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_DATABASE=laravel
+      - MYSQL_ROOT_PASSWORD=0000
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - laravel
+
+  redis:
+    image: redis:latest
+    container_name: laravel_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - laravel
+
+  nginx:
+    image: nginx:latest
+    container_name: laravel_nginx
+    restart: unless-stopped
+    ports:
+      - 81:80
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx:/etc/nginx/conf.d
+    depends_on:
+      - app
+    networks:
+      - laravel
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: laravel_phpmyadmin
+    restart: unless-stopped
+    environment:
+      - PMA_HOST=db
+      - PMA_PORT=3306
+    ports:
+      - 8080:80
+    networks:
+      - laravel
+
+networks:
+  laravel:
+
+volumes:
+  db_data:
+  redis_data:
